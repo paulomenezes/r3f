@@ -1,4 +1,4 @@
-import { MapCell, MapCellType } from '../types/map-cell';
+import { MapCell, MapCellType, ParkType } from '../types/map-cell';
 import { BUILDING_QUANTITY } from './const';
 import { randomRange } from './functions';
 
@@ -80,7 +80,7 @@ export function generateMap(mapSize: number) {
       const squareWidth = randomRange(minSize, direction ? maxSize : minSize);
       const squareHeight = randomRange(minSize, direction ? minSize : maxSize);
 
-      const zone: MapCellType = 'building';
+      const zone: MapCellType = Math.random() > 0.3 ? 'building' : 'park';
 
       for (let i = 0; i < squareWidth; i += 2) {
         for (let j = 0; j < squareHeight; j += 2) {
@@ -110,7 +110,7 @@ export function generateMap(mapSize: number) {
 
   for (let i = 0; i < mapSize; i++) {
     for (let j = 0; j < mapSize; j++) {
-      if (grid[i][j].type != 'road') {
+      if (grid[i][j].type != 'road' && grid[i][j].type != 'park') {
         const neighbors = [];
 
         if (isInBounds(mapSize, i - 1, j)) neighbors.push(grid[i - 1][j]);
@@ -130,6 +130,133 @@ export function generateMap(mapSize: number) {
           grid[i][j].type = 'none';
         }
       }
+    }
+  }
+
+  const parks: [number, number][] = [];
+
+  for (let i = 0; i < mapSize; i++) {
+    for (let j = 0; j < mapSize; j++) {
+      if (grid[i][j].type === 'park') {
+        parks.push([i, j]);
+      }
+    }
+  }
+
+  const parksArray: [number, number][][] = [[parks.pop()!]];
+
+  do {
+    const [px, py] = parks.pop()!;
+
+    let included = false;
+
+    for (const currentPark of parksArray) {
+      const alreadyIncluded = currentPark.some(([cx, cy]) => {
+        return cx === px && cy === py;
+      });
+
+      if (!alreadyIncluded) {
+        const isAdjacent = currentPark.some(([cx, cy]) => {
+          return (
+            (cx === px && cy === py - 1) ||
+            (cx === px && cy === py + 1) ||
+            (cx === px - 1 && cy === py) ||
+            (cx === px + 1 && cy === py)
+          );
+        });
+
+        if (isAdjacent) {
+          currentPark.push([px, py]);
+          included = true;
+        }
+      }
+    }
+
+    if (!included) {
+      parksArray.push([[px, py]]);
+    }
+  } while (parks.length > 0);
+
+  for (const park of parksArray) {
+    let type: ParkType = 'complex';
+    let index = 0;
+
+    let withWalls = false;
+
+    if (park.length === 1) {
+      type = 'single';
+      index = randomRange(0, 6);
+    } else {
+      const xValues = park.map(([x]) => x);
+      const yValues = park.map(([, y]) => y);
+
+      const allX = [...new Set(xValues)];
+      const allY = [...new Set(yValues)];
+
+      if (xValues.every((x) => x === xValues[0])) {
+        type = 'vertical';
+      } else if (yValues.every((y) => y === yValues[0])) {
+        type = 'horizontal';
+      } else {
+        const groupYbyX = park.reduce(
+          (acc, [x, y]) => {
+            if (!acc[x]) {
+              acc[x] = [];
+            }
+
+            acc[x].push(y);
+
+            return acc;
+          },
+          {} as Record<number, number[]>,
+        );
+
+        const allYhasSameLength = Object.values(groupYbyX).every(
+          (yValues) => yValues.length === Object.values(groupYbyX)[0].length,
+        );
+
+        if (allYhasSameLength) {
+          console.log(park);
+
+          type = 'square';
+          withWalls = allX.length > 2 && allY.length > 2;
+          // (allX.length > 3 || allY.length > 3);
+        } else {
+          if (allX.length + allY.length === park.length + 1) {
+            type = 'L';
+          } else {
+            // console.log('complex park', park);
+          }
+        }
+      }
+    }
+
+    for (const [x, y] of park) {
+      grid[x][y].parkType = type;
+      grid[x][y].withWalls = withWalls;
+
+      if (type === 'vertical' || type === 'horizontal' || type === 'L') {
+        grid[x][y].buildingIndex = randomRange(0, 2);
+      } else if (type === 'square') {
+        if (
+          (x % 2 === 1 || y % 2 === 1) &&
+          x !== 0 &&
+          y !== 0
+          // x !== mapSize - 1 &&
+          // y !== mapSize - 1
+        ) {
+          grid[x][y].parkType = 'road';
+        }
+      } else if (type === 'complex') {
+        grid[x][y].buildingIndex = randomRange(0, 2);
+      } else {
+        grid[x][y].buildingIndex = index;
+      }
+
+      grid[x][y].isMapEdgeLeft = x === 0;
+      grid[x][y].isMapEdgeRight = x === mapSize - 1;
+      grid[x][y].isMapEdgeTop = y === 0;
+      grid[x][y].isMapEdgeBottom = y === mapSize - 1;
     }
   }
 

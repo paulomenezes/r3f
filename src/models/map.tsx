@@ -6,6 +6,7 @@ import { MAP_SIZE } from '../utils/const';
 import { generateMap } from '../utils/generate-map';
 import { Base } from './base';
 import { Building } from './building';
+import { Park } from './park';
 import { Street } from './street';
 
 function createNewMap(mapSize?: number) {
@@ -66,6 +67,8 @@ export function Map({ children }: { children?: ReactNode }) {
                   <Street position={[rowIndex, 0, colIndex]} />
                 ) : col.type === 'none' ? (
                   <Base position={[rowIndex, 0, colIndex]} />
+                ) : col.type === 'park' ? (
+                  <Park position={[rowIndex, 0, colIndex]} mapCell={col} />
                 ) : (
                   <Building
                     position={[rowIndex, 0, colIndex]}

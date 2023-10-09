@@ -207,7 +207,7 @@ export function Car(
         </group>
       </a.group>
 
-      {props.destination && (
+      {/* {props.destination && (
         <mesh
           position={[props.destination[0], 0.2, props.destination[2]]}
           rotation={[-Math.PI / 2, 0, 0]}
@@ -216,7 +216,7 @@ export function Car(
           <circleGeometry />
           <meshBasicMaterial />
         </mesh>
-      )}
+      )} */}
     </>
   );
 }

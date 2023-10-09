@@ -13,7 +13,7 @@ export function Street(
   const map = useGameState((state) => state.map);
 
   const roads = {
-    corner_curved: useModel('road_corner_curved'),
+    corner_curved: useModel('road_corner'),
     junction: useModel('road_junction'),
     straight_crossing: useModel('road_straight_crossing'),
     straight: useModel('road_straight'),
